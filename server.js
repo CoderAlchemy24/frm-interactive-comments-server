@@ -6,39 +6,55 @@ const userRoutes = require("./routes/users.routes");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-const path = require('path');
-
 const normalizeOrigin = (value) => String(value).replace(/\/+$/, "");
-const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
+const configuredOrigins = (process.env.CORS_ORIGIN || "")
   .split(",")
   .map((origin) => origin.trim())
   .filter(Boolean)
   .map(normalizeOrigin);
 
+const defaultOrigins = [
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+  "https://interactive-comments-frontend.onrender.com",
+  "https://wonderful-hotteok-048126.netlify.app",
+];
+
+const allowedOrigins = new Set([
+  ...defaultOrigins,
+  ...configuredOrigins,
+]);
+
+const isTrustedPlatformOrigin = (origin) => {
+  try {
+    const { hostname } = new URL(origin);
+    return hostname.endsWith(".onrender.com") || hostname.endsWith(".netlify.app");
+  } catch {
+    return false;
+  }
+};
+
 
 app.use(express.json());
 
-const allowedOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
-app.use(cors({ origin: allowedOrigin }));
- /* app.use(
+app.use(
   cors({
     origin: (requestOrigin, callback) => {
-      // Allow requests without Origin header (curl, health checks, server-to-server calls).
+      // Allow requests without Origin header (curl/health checks/server-to-server calls).
       if (!requestOrigin) {
         callback(null, true);
         return;
       }
 
-      const isAllowed = allowedOrigins.includes(normalizeOrigin(requestOrigin));
+      const normalizedOrigin = normalizeOrigin(requestOrigin);
+      const isAllowed =
+        allowedOrigins.has(normalizedOrigin) || isTrustedPlatformOrigin(normalizedOrigin);
+
       callback(null, isAllowed);
     },
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   })
-);  */
-
-// statikus frontend fájlok
-/* app.use(express.static(path.join(__dirname, '../frontend/dist')));
- */
+);
 app.use("/comments", commentRoutes);
 app.use("/users", userRoutes);
 
@@ -49,11 +65,6 @@ app.get('/', (req, res) => {
     endpoints: ['/health', '/users', '/comments']
   });
 });
-
-/* // minden más kérés a React appot tálal (SPA fallback)
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '../frontend/dist', 'index.html'));
-}); */
 
 app.get('/health', (req, res) => res.status(200).json({ok:true}));
 
