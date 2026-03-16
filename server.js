@@ -8,12 +8,28 @@ const PORT = process.env.PORT || 3000;
 
 const path = require('path');
 
+const normalizeOrigin = (value) => String(value).replace(/\/+$/, "");
+const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean)
+  .map(normalizeOrigin);
+
 
 app.use(express.json());
 
  app.use(
   cors({
-    origin: process.env.CORS_ORIGIN || "http://localhost:5173",
+    origin: (requestOrigin, callback) => {
+      // Allow requests without Origin header (curl, health checks, server-to-server calls).
+      if (!requestOrigin) {
+        callback(null, true);
+        return;
+      }
+
+      const isAllowed = allowedOrigins.includes(normalizeOrigin(requestOrigin));
+      callback(null, isAllowed);
+    },
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   })
 ); 
@@ -23,6 +39,14 @@ app.use(express.json());
  */
 app.use("/comments", commentRoutes);
 app.use("/users", userRoutes);
+
+app.get('/', (req, res) => {
+  res.status(200).json({
+    ok: true,
+    message: 'Interactive comments API is running',
+    endpoints: ['/health', '/users', '/comments']
+  });
+});
 
 /* // minden más kérés a React appot tálal (SPA fallback)
 app.get('*', (req, res) => {
