@@ -18,7 +18,9 @@ const allowedOrigins = (process.env.CORS_ORIGIN || "http://localhost:5173")
 
 app.use(express.json());
 
- app.use(
+const allowedOrigin = process.env.CORS_ORIGIN || "http://localhost:5173";
+app.use(cors({ origin: allowedOrigin }));
+ /* app.use(
   cors({
     origin: (requestOrigin, callback) => {
       // Allow requests without Origin header (curl, health checks, server-to-server calls).
@@ -32,7 +34,7 @@ app.use(express.json());
     },
     methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
   })
-); 
+);  */
 
 // statikus frontend fájlok
 /* app.use(express.static(path.join(__dirname, '../frontend/dist')));
